@@ -15,6 +15,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+
+
 import static net.dv8tion.jda.api.interactions.commands.OptionType.*;
 
 public class BirthdaySave extends ListenerAdapter {
@@ -30,7 +35,9 @@ public class BirthdaySave extends ListenerAdapter {
         jda.updateCommands().addCommands(
                 Commands.slash("bday", "Add your birthday to the Server Calendar")
                         .addOptions(new OptionData(STRING, "date", "Format [yyyymmdd] Example : [19900515]").setRequired(true))
-                        .addOptions(new OptionData(USER, "user", "Who's birthday?").setRequired(false))
+                        .addOptions(new OptionData(USER, "user", "Who's birthday?").setRequired(false)) //error still occured in here...
+                Commands.slash("checkbday","")
+                        .addOptions(new OptionData(USER,"user","Who's brithday"))
         ).queue();
     }
 
@@ -46,6 +53,15 @@ public class BirthdaySave extends ListenerAdapter {
             saveBirthday(userId, date);
 
             event.reply("I will remember for <@" + userId + ">Birthday on " + date).queue();
+        }
+        if (event.getName().equals("checkbday")){
+            event.deferReply().queue();
+
+            String userId = event.getOption("user").getAsUser().getId();
+            String response = getBirthdayMessage(userId);
+
+            event.getHook().sendMessage(response).queue();
+
         }
     }
 
@@ -91,5 +107,57 @@ public class BirthdaySave extends ListenerAdapter {
             e.printStackTrace();
         }
     }
+
+    public String getBirthdayMessage(String userId) {
+        JSONArray birthdayArray;
+
+
+        try (FileReader reader = new FileReader("data.json")) {
+            Scanner scanner = new Scanner(reader);
+            StringBuilder jsonString = new StringBuilder();
+            while (scanner.hasNextLine()) {
+                jsonString.append(scanner.nextLine());
+            }
+            scanner.close();
+            birthdayArray = new JSONArray(jsonString.toString());
+        } catch (IOException e) {
+            return " No birthday data found. you can use /bday to add someone birthday";
+        }
+
+
+        for (int i = 0; i < birthdayArray.length(); i++) {
+            JSONObject entry = birthdayArray.getJSONObject(i);
+            if (entry.getString("userId").equals(userId)) {
+                String birthdate = entry.getString("date");
+                return formatBirthdayMessage(userId, birthdate);
+            }
+        }
+
+        return "birthday not found for <@" + userId + ">.";
+    }
+
+    public String formatBirthdayMessage(String userId, String birthdate) {
+        LocalDate birthDate = LocalDate.parse(birthdate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        LocalDate today = LocalDate.now();
+
+        // Calculate next birthday
+        LocalDate nextBirthday = birthDate.withYear(today.getYear());
+        if (nextBirthday.isBefore(today) || nextBirthday.isEqual(today)) {
+            nextBirthday = nextBirthday.plusYears(1);
+        }
+
+        // Calculate time left & new age
+        long monthsLeft = ChronoUnit.MONTHS.between(today.withDayOfMonth(1), nextBirthday.withDayOfMonth(1));
+        int newAge = Period.between(birthDate, nextBirthday).getYears();
+
+        // Convert to Discord Timestamp
+        long unixTimestamp = nextBirthday.atStartOfDay(ZoneId.of("UTC")).toEpochSecond();
+        String discordTime = "<t:" + unixTimestamp + ":R>";
+
+        return "🎂 <@" + userId + ">'s next birthday will be on " + discordTime +
+                ". They will be **" + newAge + "** years old. (" + monthsLeft + " months left!)";
+    }
+
+
 
 }
