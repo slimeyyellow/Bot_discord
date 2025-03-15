@@ -31,35 +31,32 @@ public class BirthdaySave extends ListenerAdapter {
         registerCommands();
     }
 
-    private void registerCommands() {
+    public void registerCommands() {
         jda.updateCommands().addCommands(
-                Commands.slash("bday", "Add your birthday to the Server Calendar")
-                        .addOptions(new OptionData(STRING, "date", "Format [yyyymmdd] Example : [19900515]").setRequired(true))
-                        .addOptions(new OptionData(USER, "user", "Who's birthday?").setRequired(false)) //error still occured in here...
-                Commands.slash("checkbday","")
-                        .addOptions(new OptionData(USER,"user","Who's brithday"))
+                Commands.slash("bday", "Add your birthday to the ser")
+                        .addOptions(new OptionData(STRING, "date", "Input birthday in yyyy-MM-dd format").setRequired(true))
+                        .addOptions(new OptionData(USER, "user", "Who's birthday?").setRequired(false)),
+
+                Commands.slash("checkbday", "Check someone's birthday")
+                        .addOptions(new OptionData(USER, "user", "Whose birthday do you want to check?").setRequired(true))
         ).queue();
     }
+
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("bday")) {
+            event.deferReply().queue();
             String userId = event.getOption("user") != null
-                    ? event.getOption("user").getAsUser().getId()
-                    : event.getUser().getId();
-
+                    ? event.getOption("user").getAsUser().getId(): event.getUser().getId();
             String date = event.getOption("date").getAsString();
-
             saveBirthday(userId, date);
-
             event.reply("I will remember for <@" + userId + ">Birthday on " + date).queue();
         }
         if (event.getName().equals("checkbday")){
             event.deferReply().queue();
-
             String userId = event.getOption("user").getAsUser().getId();
             String response = getBirthdayMessage(userId);
-
             event.getHook().sendMessage(response).queue();
 
         }
@@ -152,7 +149,7 @@ public class BirthdaySave extends ListenerAdapter {
 
         // Convert to Discord Timestamp
         long unixTimestamp = nextBirthday.atStartOfDay(ZoneId.of("UTC")).toEpochSecond();
-        String discordTime = "<t:" + unixTimestamp + ":R>";
+        String discordTime = "<t:" + unixTimestamp + ":D>";
 
         return "🎂 <@" + userId + ">'s next birthday will be on " + discordTime +
                 ". They will be **" + newAge + "** years old. (" + monthsLeft + " months left!)";
