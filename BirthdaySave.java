@@ -1,3 +1,6 @@
+//-------------------- CREDITS-------------------------------
+//Jisei`ichi's APCS Principal project
+//OpenAI GPT 4.o helping Fix error and clearing part of code
 package Event;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -319,8 +322,8 @@ public class BirthdaySave extends ListenerAdapter {
         if (age <= 29) return "🧑";
         if (age <= 49) return "🧑‍💼";
         if (age <= 64) return "👴";
-        if (age <=200) return"👻";
-        return "👵";
+        if (age <=200) return"👵";
+        return "👻";
     }
 
 
